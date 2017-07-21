@@ -1416,7 +1416,7 @@ namespace ProtoBuf.Meta
         /// </summary>
         protected internal static void ThrowUnexpectedSubtype(Type expected, Type actual)
         {
-            if (expected != TypeModel.ResolveProxies(actual))
+            if (!expected.IsAssignableFrom(actual) && expected != TypeModel.ResolveProxies(actual))
             {
                 throw new InvalidOperationException("Unexpected sub-type: " + actual.FullName);
             }
