@@ -88,6 +88,7 @@ namespace ProtoBuf.Meta
         }
 
         private BasicList subTypes;
+        private BasicList baseTypes;
         private bool IsValidSubType(Type subType)
         {
 #if WINRT || COREFX
@@ -445,8 +446,9 @@ namespace ProtoBuf.Meta
             fields.Trim();
             int fieldCount = fields.Count;
             int subTypeCount = subTypes == null ? 0 : subTypes.Count;
-            int[] fieldNumbers = new int[fieldCount + subTypeCount];
-            IProtoSerializer[] serializers = new IProtoSerializer[fieldCount + subTypeCount];
+            var baseTypesCount = baseTypes?.Count ?? 0;
+            int[] fieldNumbers = new int[fieldCount + subTypeCount + baseTypesCount];
+            IProtoSerializer[] serializers = new IProtoSerializer[fieldCount + subTypeCount + baseTypesCount];
             int i = 0;
             if (subTypeCount != 0)
             {
@@ -470,6 +472,15 @@ namespace ProtoBuf.Meta
                 {
                     fieldNumbers[i] = member.FieldNumber;
                     serializers[i++] = member.Serializer;
+                }
+            }
+
+            if (baseTypesCount > 0)
+            {
+                foreach (BaseType item in baseTypes)
+                {
+                    fieldNumbers[i] = item.FieldNumber;
+                    serializers[i++] = item.Serializer;
                 }
             }
 
@@ -638,6 +649,14 @@ namespace ProtoBuf.Meta
                         if (item.TryGet(nameof(ProtoContractAttribute.ImplicitFirstTag), out tmp) && (int) tmp > 0) implicitFirstTag = (int) tmp;
                         if (item.TryGet(nameof(ProtoContractAttribute.IsGroup), out tmp)) IsGroup = (bool)tmp;
                     }
+                }
+
+                if (fullAttributeTypeName == "ProtoBuf.ProtoInheritAttribute")
+                {
+                    if (baseTypes == null) baseTypes = new BasicList();
+
+                    var protoInherit = (ProtoInheritAttribute)item.Target;
+                    baseTypes.Add(new BaseType(protoInherit.Tag, this, DataFormat.Default));
                 }
 
                 if (fullAttributeTypeName == "System.Runtime.Serialization.DataContractAttribute")
